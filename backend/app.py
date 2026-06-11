@@ -7,10 +7,8 @@ from datetime import timedelta
 def create_app():
     app = Flask(__name__)
 
-    # Allow requests from your Vercel frontend
     CORS(app, resources={r"/*": {"origins": "*"}})
 
-    # Config
     app.config['SQLALCHEMY_DATABASE_URI']        = 'sqlite:///campusfind.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY']                     = os.environ.get(
@@ -26,7 +24,7 @@ def create_app():
     socketio.init_app(
         app,
         cors_allowed_origins = "*",
-        async_mode           = 'eventlet',
+        async_mode           = 'threading',
     )
 
     from routes  import routes_bp
@@ -35,12 +33,25 @@ def create_app():
     app.register_blueprint(routes_bp)
     register_sockets(socketio)
 
+    # ── Auto create and seed database on startup ──────────────────────────
+    with app.app_context():
+        db.create_all()
+        try:
+            from models import Location
+            if Location.query.count() == 0:
+                from seed import sample_locations
+                for loc in sample_locations:
+                    db.session.add(Location(**loc))
+                db.session.commit()
+                print("✅ Database seeded successfully")
+            else:
+                print(f"✅ Database ready")
+        except Exception as e:
+            print(f"⚠️ Seed error: {e}")
+
     return app
 
 app = create_app()
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        print("✅ Database ready")
     socketio.run(app, debug=True, port=5000)
