@@ -9,7 +9,7 @@ export default function ShareButton({ onSessionCreated }) {
   async function handleShare() {
     setLoading(true)
     try {
-      const res  = await axios.post('http://localhost:5000/api/meet/create')
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/meet/create`)
       const code = res.data.code
       const url  = `${window.location.origin}/meet/${code}`
       setLink(url)
