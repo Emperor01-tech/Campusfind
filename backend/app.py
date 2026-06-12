@@ -9,7 +9,11 @@ def create_app():
 
     CORS(app, resources={r"/*": {"origins": "*"}})
 
-    app.config['SQLALCHEMY_DATABASE_URI']        = 'sqlite:///campusfind.db'
+    app.config['SQLALCHEMY_DATABASE_URI']        = 'sqlite:///campusfind.db?check_same_thread=False'
+    app.config['SQLALCHEMY_ENGINE_OPTIONS']      = {
+        'connect_args': {'check_same_thread': False},
+        'pool_pre_ping': True,
+    }
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY']                     = os.environ.get(
                                                      'SECRET_KEY',
@@ -33,7 +37,6 @@ def create_app():
     app.register_blueprint(routes_bp)
     register_sockets(socketio)
 
-    # ── Auto create and seed database on startup ──────────────────────────
     with app.app_context():
         db.create_all()
         try:
@@ -45,7 +48,7 @@ def create_app():
                 db.session.commit()
                 print("✅ Database seeded successfully")
             else:
-                print(f"✅ Database ready")
+                print("✅ Database already has data")
         except Exception as e:
             print(f"⚠️ Seed error: {e}")
 
