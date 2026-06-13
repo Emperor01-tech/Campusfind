@@ -5,14 +5,14 @@ import L from 'leaflet'
 const OSRM = 'https://router.project-osrm.org/route/v1/foot'
 
 async function fetchRoute(from, to) {
-  const url = `${OSRM}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`
+  const url  = `${OSRM}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`
   const res  = await fetch(url)
   const data = await res.json()
   if (data.code !== 'Ok' || !data.routes.length) return null
   return {
-    coords:   data.routes[0].geometry.coordinates, // [lng, lat] pairs
-    distance: data.routes[0].distance,             // metres
-    duration: data.routes[0].duration,             // seconds
+    coords:   data.routes[0].geometry.coordinates,
+    distance: data.routes[0].distance,
+    duration: data.routes[0].duration,
   }
 }
 
@@ -27,20 +27,18 @@ export default function RoutingLine({ from, to }) {
   const routeRef     = useRef(null)
   const progressRef  = useRef(0)
   const infoRef      = useRef(null)
+  const firstDrawRef = useRef(true)  // ← tracks first draw only
 
-  // ── Draw route from OSRM response ─────────────────────────────────────────
   function drawRoute(coords, distance, duration) {
-    // Convert [lng, lat] → [lat, lng] for Leaflet
     const points = coords.map(c => [c[1], c[0]])
     routeRef.current = points
 
-    // Remove old drawings
     if (glowRef.current)    glowRef.current.remove()
     if (lineRef.current)    lineRef.current.remove()
     if (fromDotRef.current) fromDotRef.current.remove()
     if (infoRef.current)    infoRef.current.remove()
 
-    // Glow
+    // Glow layer
     glowRef.current = L.polyline(points, {
       color:   '#00FF88',
       weight:  14,
@@ -70,7 +68,7 @@ export default function RoutingLine({ from, to }) {
       direction:  'top',
     })
 
-    // Info bubble above destination
+    // Distance + time bubble
     const mins = Math.ceil(duration / 60)
     const dist = distance >= 1000
       ? `${(distance / 1000).toFixed(1)}km`
@@ -97,14 +95,16 @@ export default function RoutingLine({ from, to }) {
       zIndexOffset: 1000,
     }).addTo(map)
 
-    // Fit map to show full route
-    map.fitBounds(
-      L.latLngBounds(points).pad(0.25),
-      { animate: true, duration: 1 }
-    )
+    // Only fit bounds on very first draw — never interrupt user zooming after
+    if (firstDrawRef.current) {
+      map.fitBounds(
+        L.latLngBounds(points).pad(0.25),
+        { animate: true, duration: 1 }
+      )
+      firstDrawRef.current = false
+    }
   }
 
-  // ── Animate moving dot along route ────────────────────────────────────────
   function startAnimation() {
     if (animRef.current) clearInterval(animRef.current)
 
@@ -116,7 +116,7 @@ export default function RoutingLine({ from, to }) {
           background:#00D26A;
           border-radius:50%;
           border:3px solid white;
-          box-shadow:0 0 12px #00D26A, 0 0 4px #00D26A;
+          box-shadow:0 0 12px #00D26A;
         "></div>`,
       iconSize:   [14, 14],
       iconAnchor: [7, 7],
@@ -136,7 +136,6 @@ export default function RoutingLine({ from, to }) {
       progressRef.current += 0.008
       if (progressRef.current > 1) progressRef.current = 0
 
-      // Find position along the polyline
       const totalSegments = route.length - 1
       const exact         = progressRef.current * totalSegments
       const segIndex      = Math.floor(exact)
@@ -144,45 +143,46 @@ export default function RoutingLine({ from, to }) {
 
       if (segIndex >= totalSegments) return
 
-      const p1  = route[segIndex]
-      const p2  = route[segIndex + 1]
-      const lat = p1[0] + (p2[0] - p1[0]) * segProgress
-      const lng = p1[1] + (p2[1] - p1[1]) * segProgress
+      const p1      = route[segIndex]
+      const p2      = route[segIndex + 1]
+      const lerpLat = p1[0] + (p2[0] - p1[0]) * segProgress
+      const lerpLng = p1[1] + (p2[1] - p1[1]) * segProgress
 
-      dotRef.current.setLatLng([lat, lng])
+      dotRef.current.setLatLng([lerpLat, lerpLng])
     }, 50)
   }
 
-  // ── Fetch route and draw ───────────────────────────────────────────────────
   async function loadRoute() {
     if (!from || !to) return
     try {
       const result = await fetchRoute(from, to)
       if (!result) return
       drawRoute(result.coords, result.distance, result.duration)
-      startAnimation()
+      if (!dotRef.current) startAnimation()
     } catch (err) {
       console.warn('Route fetch failed:', err)
     }
   }
 
-  // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!from || !to) return
+
+    // Reset first draw flag when destination changes
+    firstDrawRef.current = true
+    progressRef.current  = 0
+
     loadRoute()
 
     // Update every 3 seconds as user moves
-    intervalRef.current = setInterval(() => {
-      loadRoute()
-    }, 3000)
+    intervalRef.current = setInterval(loadRoute, 3000)
 
     return () => {
-      if (glowRef.current)    glowRef.current.remove()
-      if (lineRef.current)    lineRef.current.remove()
-      if (dotRef.current)     dotRef.current.remove()
-      if (fromDotRef.current) fromDotRef.current.remove()
-      if (infoRef.current)    infoRef.current.remove()
-      if (animRef.current)    clearInterval(animRef.current)
+      if (glowRef.current)     glowRef.current.remove()
+      if (lineRef.current)     lineRef.current.remove()
+      if (dotRef.current)      { dotRef.current.remove(); dotRef.current = null }
+      if (fromDotRef.current)  fromDotRef.current.remove()
+      if (infoRef.current)     infoRef.current.remove()
+      if (animRef.current)     clearInterval(animRef.current)
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [from?.lat, from?.lng, to?.lat, to?.lng])
