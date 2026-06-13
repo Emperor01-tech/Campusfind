@@ -17,7 +17,7 @@ export default function MeetPage() {
 
   // Verify the session code is valid
   useEffect(() => {
-    axios.get(`http://localhost:5000/api/meet/${code}`)
+    axios.get(`${import.meta.env.VITE_API_URL}/meet/${code}`)
       .then(res => { setValid(res.data.valid); setChecking(false) })
       .catch(()  => { setValid(false);          setChecking(false) })
   }, [code])
