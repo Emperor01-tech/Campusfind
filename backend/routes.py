@@ -133,3 +133,21 @@ def manual_seed():
         return jsonify({'message': f'Already has {count} locations'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+import os
+
+@routes_bp.route('/api/admin/dbcheck', methods=['GET'])
+def db_check():
+    db_url = os.environ.get('DATABASE_URL', 'NOT SET')
+    # Hide password but show structure
+    if db_url != 'NOT SET':
+        parts = db_url.split('@')
+        safe  = parts[0].split(':')[0] + ':***@' + parts[1] if len(parts) > 1 else 'MALFORMED'
+    else:
+        safe = 'NOT SET'
+    return jsonify({
+        'database_url_set': db_url != 'NOT SET',
+        'database_url_preview': safe,
+        'using_sqlite': 'sqlite' in str(db_url).lower(),
+    })
