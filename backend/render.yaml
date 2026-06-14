@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: campusfind-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 1 --bind 0.0.0.0:10000 app:app
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres:###Segun09@@db.bzapuryrttbhxfwgvrdv.supabase.co:5432/postgres
+      - key: SECRET_KEY
+        value: campusfind_oou_secret_live
+      - key: PYTHON_VERSION
+        value: 3.11.0
