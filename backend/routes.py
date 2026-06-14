@@ -117,3 +117,19 @@ def admin_logout():
 def admin_check():
     token = request.headers.get('X-Admin-Token', '')
     return jsonify({'authenticated': token == 'oou_admin_token_9x7k'})
+
+
+@routes_bp.route('/api/admin/seed', methods=['GET'])
+def manual_seed():
+    try:
+        from data import SAMPLE_LOCATIONS
+        from models import Location
+        count = Location.query.count()
+        if count == 0:
+            for loc in SAMPLE_LOCATIONS:
+                db.session.add(Location(**loc))
+            db.session.commit()
+            return jsonify({'message': f'Seeded {Location.query.count()} locations'})
+        return jsonify({'message': f'Already has {count} locations'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
