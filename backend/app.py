@@ -9,12 +9,19 @@ def create_app():
 
     CORS(app, resources={r"/*": {"origins": "*"}})
 
-    app.config['SQLALCHEMY_DATABASE_URI']        = 'sqlite:///campusfind.db?check_same_thread=False'
+    # ── Use Supabase in production, SQLite locally ────────────────────────
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+
+    if DATABASE_URL:
+        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    else:
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///campusfind.db?check_same_thread=False'
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'connect_args': {'check_same_thread': False},
+            'pool_pre_ping': True,
+        }
+
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ENGINE_OPTIONS']      = {
-        'connect_args': {'check_same_thread': False},
-        'pool_pre_ping': True,
-    }
     app.config['SECRET_KEY']                     = os.environ.get(
                                                      'SECRET_KEY',
                                                      'campusfind_oou_secret'
@@ -37,7 +44,6 @@ def create_app():
     app.register_blueprint(routes_bp)
     register_sockets(socketio)
 
-    # ── Auto seed on startup ──────────────────────────────────────────────
     with app.app_context():
         db.create_all()
         try:
