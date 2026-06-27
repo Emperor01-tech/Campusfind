@@ -12,6 +12,8 @@ import AdminLogin               from './pages/AdminLogin'
 import AdminDashboard           from './pages/AdminDashboard'
 import useUserLocation          from './hooks/useUserLocation'
 import useArrivalDetection      from './hooks/useArrivalDetection'
+import FeedbackWidget from './components/FeedbackWidget'
+import AdminFeedback from './pages/AdminFeedback'
 
 function HomePage() {
   const [selectedLocation, setSelectedLocation] = useState(null)
@@ -72,6 +74,7 @@ function HomePage() {
       />
 
       <InstallPrompt />
+      <FeedbackWidget />
     </div>
   )
 }
@@ -83,6 +86,7 @@ export default function App() {
       <Route path="/meet/:code"      element={<MeetPage />}      />
       <Route path="/admin"           element={<AdminLogin />}    />
       <Route path="/admin/dashboard" element={<AdminDashboard />}/>
+      <Route path="/admin/feedback" element={<AdminFeedback />} />
     </Routes>
   )
 }

@@ -41,3 +41,10 @@ export const adminDeleteLocation = (id)       => API.delete(`/locations/${id}`)
 export const fetchDeletedLocations  = ()     => API.get('/admin/deleted')
 export const restoreLocation        = (id)   => API.post(`/admin/restore/${id}`)
 export const permanentDeleteLocation = (id)  => API.delete(`/admin/permanent-delete/${id}`)
+
+export const submitFeedback = (message, page) =>
+  API.post('/feedback', { message, page })
+
+export const fetchFeedback = () => API.get('/admin/feedback')
+
+export const resolveFeedback = (id) => API.patch(`/admin/feedback/${id}/resolve`)
