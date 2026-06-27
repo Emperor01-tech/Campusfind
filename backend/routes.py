@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+dleDelete(loc)}from flask import Blueprint, request, jsonify
 from extensions import db
 from models import Location
 import uuid, string, random
@@ -116,14 +116,17 @@ def check_meet_session(code):
 
 from flask import session
 
-ADMIN_PASSWORD = '123456'
+import os
+
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+ADMIN_TOKEN    = os.environ.get('ADMIN_TOKEN')
 
 @routes_bp.route('/api/admin/login', methods=['POST'])
 def admin_login():
     data = request.get_json()
     if data.get('password') == ADMIN_PASSWORD:
-        return jsonify({'success': True, 'token': 'oou_admin_token_9x7k'})
-    return jsonify({'success': False, 'error': 'Wrong password'}), 401
+        return jsonify({'success': True, 'token': ADMIN_TOKEN})
+    return jsonify({'success': False, 'error': 'Wrong password'}), 401401
 
 @routes_bp.route('/api/admin/logout', methods=['POST'])
 def admin_logout():
@@ -132,7 +135,7 @@ def admin_logout():
 @routes_bp.route('/api/admin/check', methods=['GET'])
 def admin_check():
     token = request.headers.get('X-Admin-Token', '')
-    return jsonify({'authenticated': token == 'oou_admin_token_9x7k'})
+    return jsonify({'authenticated': token == ADMIN_TOKEN})
 
 
 @routes_bp.route('/api/admin/seed', methods=['GET'])
