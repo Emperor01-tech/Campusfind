@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from extensions import db
 from models import Location
 import uuid, string, random
+from datetime import datetime, timedelta
 
 routes_bp = Blueprint('routes', __name__)
 
@@ -15,8 +16,9 @@ def generate_code(length=6):
 @routes_bp.route('/api/locations', methods=['GET'])
 def get_locations():
     query = request.args.get('q', '').strip()
+    base  = Location.query.filter(Location.deleted_at.is_(None))
     if query:
-        results = Location.query.filter(
+        results = base.filter(
             Location.name.ilike(f'%{query}%')        |
             Location.description.ilike(f'%{query}%') |
             Location.building.ilike(f'%{query}%')    |
@@ -24,7 +26,7 @@ def get_locations():
             Location.category.ilike(f'%{query}%')
         ).all()
     else:
-        results = Location.query.all()
+        results = base.all()
     return jsonify([loc.to_dict() for loc in results])
 
 # ── GET single location ───────────────────────────────────────────────────────
@@ -79,9 +81,9 @@ def update_location(id):
 @routes_bp.route('/api/locations/<int:id>', methods=['DELETE'])
 def delete_location(id):
     loc = Location.query.get_or_404(id)
-    db.session.delete(loc)
+    loc.deleted_at = datetime.utcnow()
     db.session.commit()
-    return jsonify({'message': f'"{loc.name}" deleted'})
+    return jsonify({'message': f'"{loc.name}" moved to Recently Deleted'})
 
 # ── POST create meet session ──────────────────────────────────────────────────
 from datetime import datetime, timedelta
@@ -150,3 +152,38 @@ def manual_seed():
 
 
 import os
+# ── GET all soft-deleted locations ────────────────────────────────────────────
+@routes_bp.route('/api/admin/deleted', methods=['GET'])
+def get_deleted_locations():
+    cutoff = datetime.utcnow() - timedelta(days=30)
+
+    # Permanently erase anything older than 30 days first
+    expired = Location.query.filter(
+        Location.deleted_at.isnot(None),
+        Location.deleted_at < cutoff
+    ).all()
+    for loc in expired:
+        db.session.delete(loc)
+    if expired:
+        db.session.commit()
+
+    # Return what's left in the trash
+    results = Location.query.filter(Location.deleted_at.isnot(None)).all()
+    return jsonify([loc.to_dict() for loc in results])
+
+# ── POST restore a soft-deleted location ──────────────────────────────────────
+@routes_bp.route('/api/admin/restore/<int:id>', methods=['POST'])
+def restore_location(id):
+    loc = Location.query.get_or_404(id)
+    loc.deleted_at = None
+    db.session.commit()
+    return jsonify({'message': f'"{loc.name}" restored', 'location': loc.to_dict()})
+
+# ── DELETE permanently erase a location ───────────────────────────────────────
+@routes_bp.route('/api/admin/permanent-delete/<int:id>', methods=['DELETE'])
+def permanent_delete_location(id):
+    loc  = Location.query.get_or_404(id)
+    name = loc.name
+    db.session.delete(loc)
+    db.session.commit()
+    return jsonify({'message': f'"{name}" permanently deleted'})

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from extensions import db
 
 class Location(db.Model):
@@ -12,6 +13,7 @@ class Location(db.Model):
     lng         = db.Column(db.Float, nullable=False)
     icon        = db.Column(db.String(10))
     color       = db.Column(db.String(10))
+    deleted_at  = db.Column(db.DateTime, nullable=True)   # ← NEW
 
     def to_dict(self):
         return {
@@ -26,9 +28,9 @@ class Location(db.Model):
             'lng':         self.lng,
             'icon':        self.icon,
             'color':       self.color,
+            'deleted_at':  self.deleted_at.isoformat() if self.deleted_at else None,
         }
 
-from datetime import datetime, timedelta
 
 class MeetSession(db.Model):
     code       = db.Column(db.String(20), primary_key=True)

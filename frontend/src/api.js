@@ -36,3 +36,8 @@ export const adminCheck = () => API.get('/admin/check')
 export const adminAddLocation    = (data)     => API.post('/locations', data)
 export const adminUpdateLocation = (id, data) => API.put(`/locations/${id}`, data)
 export const adminDeleteLocation = (id)       => API.delete(`/locations/${id}`)
+
+
+export const fetchDeletedLocations  = ()     => API.get('/admin/deleted')
+export const restoreLocation        = (id)   => API.post(`/admin/restore/${id}`)
+export const permanentDeleteLocation = (id)  => API.delete(`/admin/permanent-delete/${id}`)
