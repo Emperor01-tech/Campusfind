@@ -10,6 +10,7 @@ import AdminLogin               from './pages/AdminLogin'
 import AdminDashboard           from './pages/AdminDashboard'
 import useUserLocation          from './hooks/useUserLocation'
 import useArrivalDetection      from './hooks/useArrivalDetection'
+import InstallPrompt from './components/InstallPrompt'
 
 function HomePage() {
   const [selectedLocation, setSelectedLocation] = useState(null)
@@ -51,6 +52,7 @@ function HomePage() {
         location={arrivedAt}
         onDismiss={dismissArrival}
       />
+      <InstallPrompt />
     </div>
   )
 }
