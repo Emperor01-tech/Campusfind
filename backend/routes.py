@@ -1,4 +1,4 @@
-dleDelete(loc)}from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify
 from extensions import db
 from models import Location
 import uuid, string, random
