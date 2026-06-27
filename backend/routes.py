@@ -126,7 +126,7 @@ def admin_login():
     data = request.get_json()
     if data.get('password') == ADMIN_PASSWORD:
         return jsonify({'success': True, 'token': ADMIN_TOKEN})
-    return jsonify({'success': False, 'error': 'Wrong password'}), 401401
+    return jsonify({'success': False, 'error': 'Wrong password'}), 401
 
 @routes_bp.route('/api/admin/logout', methods=['POST'])
 def admin_logout():
