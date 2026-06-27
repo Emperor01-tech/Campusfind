@@ -31,7 +31,21 @@ class Location(db.Model):
             'deleted_at':  self.deleted_at.isoformat() if self.deleted_at else None,
         }
 
+class Feedback(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    message    = db.Column(db.String(500), nullable=False)
+    page       = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    resolved   = db.Column(db.Boolean, default=False)
 
+    def to_dict(self):
+        return {
+            'id':         self.id,
+            'message':    self.message,
+            'page':       self.page,
+            'created_at': self.created_at.isoformat(),
+            'resolved':   self.resolved,
+        }
 class MeetSession(db.Model):
     code       = db.Column(db.String(20), primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -190,3 +190,33 @@ def permanent_delete_location(id):
     db.session.delete(loc)
     db.session.commit()
     return jsonify({'message': f'"{name}" permanently deleted'})
+from models import Feedback
+
+# ── POST submit feedback ──────────────────────────────────────────────────────
+@routes_bp.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    data = request.get_json()
+    message = data.get('message', '').strip()
+    if not message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+    fb = Feedback(
+        message = message,
+        page    = data.get('page', ''),
+    )
+    db.session.add(fb)
+    db.session.commit()
+    return jsonify({'message': 'Feedback received, thank you!'}), 201
+
+# ── GET all feedback (admin only) ─────────────────────────────────────────────
+@routes_bp.route('/api/admin/feedback', methods=['GET'])
+def get_feedback():
+    results = Feedback.query.order_by(Feedback.created_at.desc()).all()
+    return jsonify([f.to_dict() for f in results])
+
+# ── PATCH mark feedback as resolved ───────────────────────────────────────────
+@routes_bp.route('/api/admin/feedback/<int:id>/resolve', methods=['PATCH'])
+def resolve_feedback(id):
+    fb = Feedback.query.get_or_404(id)
+    fb.resolved = True
+    db.session.commit()
+    return jsonify({'message': 'Marked as resolved'})
