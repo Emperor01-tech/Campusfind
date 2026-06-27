@@ -1,20 +1,30 @@
-import { useState }            from 'react'
-import { Routes, Route }       from 'react-router-dom'
-import Map                     from './components/Map'
+import { useState, useEffect }  from 'react'
+import { Routes, Route }        from 'react-router-dom'
+import Map                      from './components/Map'
 import SearchBar                from './components/SearchBar'
 import ShareButton              from './components/ShareButton'
 import GPSStatusBar             from './components/GPSStatusBar'
 import ArrivalBanner            from './components/ArrivalBanner'
-import MeetPage                  from './pages/MeetPage'
+import InstallPrompt            from './components/InstallPrompt'
+import Onboarding               from './components/Onboarding'
+import MeetPage                 from './pages/MeetPage'
 import AdminLogin               from './pages/AdminLogin'
 import AdminDashboard           from './pages/AdminDashboard'
 import useUserLocation          from './hooks/useUserLocation'
 import useArrivalDetection      from './hooks/useArrivalDetection'
-import InstallPrompt from './components/InstallPrompt'
 
 function HomePage() {
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [meetCode, setMeetCode]                  = useState(null)
+  const [showOnboarding, setShowOnboarding]      = useState(false)
+  const [checkedOnboarding, setCheckedOnboarding] = useState(false)
+
+  // Check on mount if user has seen onboarding before
+  useEffect(() => {
+    const seen = localStorage.getItem('campusfind_onboarded')
+    if (!seen) setShowOnboarding(true)
+    setCheckedOnboarding(true)
+  }, [])
 
   const {
     location: userLocation,
@@ -28,8 +38,17 @@ function HomePage() {
     selectedLocation
   )
 
+  // Don't render the map until we've checked onboarding status
+  // prevents a flash of the map before the intro shows
+  if (!checkedOnboarding) return null
+
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+
+      {showOnboarding && (
+        <Onboarding onFinish={() => setShowOnboarding(false)} />
+      )}
+
       <SearchBar onSelect={setSelectedLocation} />
 
       <Map
@@ -46,12 +65,12 @@ function HomePage() {
         loading={gpsLoading}
       />
 
-      {/* Arrival celebration popup */}
       <ArrivalBanner
         arrived={arrived}
         location={arrivedAt}
         onDismiss={dismissArrival}
       />
+
       <InstallPrompt />
     </div>
   )
