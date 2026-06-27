@@ -27,3 +27,17 @@ class Location(db.Model):
             'icon':        self.icon,
             'color':       self.color,
         }
+
+from datetime import datetime, timedelta
+
+class MeetSession(db.Model):
+    code       = db.Column(db.String(20), primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)
+
+    def to_dict(self):
+        return {
+            'code':       self.code,
+            'created_at': self.created_at.isoformat(),
+            'expires_at': self.expires_at.isoformat(),
+        }

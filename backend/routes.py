@@ -84,19 +84,33 @@ def delete_location(id):
     return jsonify({'message': f'"{loc.name}" deleted'})
 
 # ── POST create meet session ──────────────────────────────────────────────────
+from datetime import datetime, timedelta
+from models import MeetSession
+
+# ── POST create a new meet session ────────────────────────────────────────────
 @routes_bp.route('/api/meet/create', methods=['POST'])
 def create_meet_session():
     code = generate_code()
-    meet_sessions[code] = {'users': {}, 'created_at': str(uuid.uuid4())}
+    session = MeetSession(
+        code       = code,
+        created_at = datetime.utcnow(),
+        expires_at = datetime.utcnow() + timedelta(hours=6),
+    )
+    db.session.add(session)
+    db.session.commit()
     return jsonify({'code': code, 'link': f'/meet/{code}'})
 
-# ── GET check meet session ────────────────────────────────────────────────────
+# ── GET check if meet session exists and is still valid ───────────────────────
 @routes_bp.route('/api/meet/<code>', methods=['GET'])
 def check_meet_session(code):
-    if code in meet_sessions:
-        return jsonify({'valid': True,  'code': code})
-    return jsonify({'valid': False, 'code': code}), 404
-
+    session = MeetSession.query.get(code)
+    if not session:
+        return jsonify({'valid': False, 'code': code}), 404
+    if session.expires_at < datetime.utcnow():
+        db.session.delete(session)
+        db.session.commit()
+        return jsonify({'valid': False, 'code': code, 'reason': 'expired'}), 404
+    return jsonify({'valid': True, 'code': code})
 
 from flask import session
 
