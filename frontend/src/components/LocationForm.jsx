@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react'
 
-const CATEGORIES = ['admin', 'faculty', 'facility', 'amenity']
-const TYPES      = ['building', 'office']
-const COLORS     = [
-  { label: 'Amber',   value: '#F59E0B' },
-  { label: 'Blue',    value: '#3B82F6' },
-  { label: 'Purple',  value: '#A855F7' },
-  { label: 'Pink',    value: '#EC4899' },
-  { label: 'Cyan',    value: '#06B6D4' },
-  { label: 'Green',   value: '#10B981' },
-  { label: 'Red',     value: '#EF4444' },
-  { label: 'Orange',  value: '#F97316' },
-  { label: 'Gray',    value: '#64748B' },
+const PRESET_CATEGORIES = ['admin', 'faculty', 'facility', 'amenity']
+const TYPES  = ['building', 'office']
+const COLORS = [
+  { label: 'Amber',  value: '#F59E0B' },
+  { label: 'Blue',   value: '#3B82F6' },
+  { label: 'Purple', value: '#A855F7' },
+  { label: 'Pink',   value: '#EC4899' },
+  { label: 'Cyan',   value: '#06B6D4' },
+  { label: 'Green',  value: '#10B981' },
+  { label: 'Red',    value: '#EF4444' },
+  { label: 'Orange', value: '#F97316' },
+  { label: 'Gray',   value: '#64748B' },
 ]
+
+const CUSTOM_FLAG = '__custom__'
 
 const EMPTY = {
   name: '', type: 'building', category: 'admin',
@@ -23,12 +25,33 @@ const EMPTY = {
 export default function LocationForm({ initial, onSubmit, onCancel, loading }) {
   const [form, setForm] = useState(initial || EMPTY)
 
+  // Whether the category dropdown is showing the free-text input
+  const [categoryMode, setCategoryMode] = useState('preset') // 'preset' | 'custom'
+
   useEffect(() => {
-    setForm(initial || EMPTY)
+    const data = initial || EMPTY
+    setForm(data)
+    // If editing a location whose category isn't one of the presets,
+    // automatically switch into custom mode so the real value is visible
+    if (data.category && !PRESET_CATEGORIES.includes(data.category)) {
+      setCategoryMode('custom')
+    } else {
+      setCategoryMode('preset')
+    }
   }, [initial])
 
   function set(field, value) {
     setForm(f => ({ ...f, [field]: value }))
+  }
+
+  function handleCategorySelectChange(value) {
+    if (value === CUSTOM_FLAG) {
+      setCategoryMode('custom')
+      set('category', '') // clear so they type fresh
+    } else {
+      setCategoryMode('preset')
+      set('category', value)
+    }
   }
 
   function handleSubmit() {
@@ -36,43 +59,34 @@ export default function LocationForm({ initial, onSubmit, onCancel, loading }) {
       alert('Name, Latitude and Longitude are required.')
       return
     }
+    if (!form.category.trim()) {
+      alert('Please choose or type a category.')
+      return
+    }
     onSubmit({ ...form, lat: parseFloat(form.lat), lng: parseFloat(form.lng) })
   }
 
   const inputStyle = {
-    width:        '100%',
-    padding:      '9px 12px',
-    background:   '#0B1120',
-    border:       '1.5px solid #334155',
-    borderRadius: 8,
-    color:        'white',
-    fontSize:     13,
-    outline:      'none',
-    boxSizing:    'border-box',
+    width: '100%', padding: '9px 12px', background: '#0B1120',
+    border: '1.5px solid #334155', borderRadius: 8, color: 'white',
+    fontSize: 13, outline: 'none', boxSizing: 'border-box',
   }
 
   const labelStyle = {
-    display:      'block',
-    fontSize:     11,
-    fontWeight:   600,
-    color:        '#94A3B8',
-    marginBottom: 4,
-    textTransform:'uppercase',
-    letterSpacing:'0.05em',
+    display: 'block', fontSize: 11, fontWeight: 600, color: '#94A3B8',
+    marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em',
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-      {/* Name */}
       <div>
         <label style={labelStyle}>Location Name *</label>
         <input style={inputStyle} value={form.name}
-          placeholder="e.g. HOD Physics"
+          placeholder="e.g. HOD Physics, or Ago-Iwoye Market"
           onChange={e => set('name', e.target.value)} />
       </div>
 
-      {/* Type + Category */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={labelStyle}>Type</label>
@@ -81,16 +95,45 @@ export default function LocationForm({ initial, onSubmit, onCancel, loading }) {
             {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
+
         <div>
           <label style={labelStyle}>Category</label>
-          <select style={inputStyle} value={form.category}
-            onChange={e => set('category', e.target.value)}>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+
+          {categoryMode === 'preset' ? (
+            <select
+              style={inputStyle}
+              value={form.category}
+              onChange={e => handleCategorySelectChange(e.target.value)}
+            >
+              {PRESET_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value={CUSTOM_FLAG}>✏️ Type my own...</option>
+            </select>
+          ) : (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                autoFocus
+                style={inputStyle}
+                value={form.category}
+                placeholder="e.g. town, market, hostel"
+                onChange={e => set('category', e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => { setCategoryMode('preset'); set('category', 'admin') }}
+                title="Switch back to preset list"
+                style={{
+                  background: '#1E293B', border: '1.5px solid #334155',
+                  borderRadius: 8, color: '#94A3B8', fontSize: 12,
+                  padding: '0 10px', cursor: 'pointer', flexShrink: 0,
+                }}
+              >
+                ↺
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Description */}
       <div>
         <label style={labelStyle}>Description</label>
         <input style={inputStyle} value={form.description}
@@ -98,23 +141,21 @@ export default function LocationForm({ initial, onSubmit, onCancel, loading }) {
           onChange={e => set('description', e.target.value)} />
       </div>
 
-      {/* Building + Room */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={labelStyle}>Building</label>
           <input style={inputStyle} value={form.building}
-            placeholder="e.g. Science Block"
+            placeholder="e.g. Science Block, or leave blank"
             onChange={e => set('building', e.target.value)} />
         </div>
         <div>
           <label style={labelStyle}>Room</label>
           <input style={inputStyle} value={form.room}
-            placeholder="e.g. Room 201"
+            placeholder="e.g. Room 201, or leave blank"
             onChange={e => set('room', e.target.value)} />
         </div>
       </div>
 
-      {/* Lat + Lng */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={labelStyle}>Latitude *</label>
@@ -130,24 +171,18 @@ export default function LocationForm({ initial, onSubmit, onCancel, loading }) {
         </div>
       </div>
 
-      {/* How to get coords tip */}
       <div style={{
-        background:   '#00D26A0D',
-        border:       '1px solid #00D26A33',
-        borderRadius: 8,
-        padding:      '8px 12px',
-        fontSize:     11,
-        color:        '#86EFAC',
+        background: '#00D26A0D', border: '1px solid #00D26A33',
+        borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#86EFAC',
       }}>
-        💡 To get coordinates: Go to Google Maps → right-click the building → copy the numbers shown at the top
+        💡 To get coordinates: Go to Google Maps → right-click the place → copy the numbers shown at the top
       </div>
 
-      {/* Icon + Color */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={labelStyle}>Icon (emoji)</label>
           <input style={inputStyle} value={form.icon}
-            placeholder="e.g. 📍"
+            placeholder="e.g. 🏪 for market, 🛏️ for hostel"
             onChange={e => set('icon', e.target.value)} />
         </div>
         <div>
@@ -162,37 +197,24 @@ export default function LocationForm({ initial, onSubmit, onCancel, loading }) {
         </div>
       </div>
 
-      {/* Color preview */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width:        28,
-          height:       28,
-          borderRadius: '50% 50% 50% 0',
-          transform:    'rotate(-45deg)',
-          background:   form.color,
-          border:       '2px solid white',
-          boxShadow:    '0 2px 8px rgba(0,0,0,0.3)',
+          width: 28, height: 28, borderRadius: '50% 50% 50% 0',
+          transform: 'rotate(-45deg)', background: form.color,
+          border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         }} />
-        <span style={{ fontSize: 11, color: '#64748B' }}>
-          Marker preview
-        </span>
+        <span style={{ fontSize: 11, color: '#64748B' }}>Marker preview</span>
       </div>
 
-      {/* Buttons */}
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
         <button
           onClick={handleSubmit}
           disabled={loading}
           style={{
-            flex:         1,
-            padding:      '10px',
-            background:   'linear-gradient(135deg, #00D26A, #0EA5E9)',
-            border:       'none',
-            borderRadius: 8,
-            color:        'white',
-            fontWeight:   700,
-            fontSize:     13,
-            cursor:       'pointer',
+            flex: 1, padding: '10px',
+            background: 'linear-gradient(135deg, #00D26A, #0EA5E9)',
+            border: 'none', borderRadius: 8, color: 'white',
+            fontWeight: 700, fontSize: 13, cursor: 'pointer',
           }}
         >
           {loading ? '⏳ Saving...' : '✅ Save Location'}
@@ -200,13 +222,9 @@ export default function LocationForm({ initial, onSubmit, onCancel, loading }) {
         <button
           onClick={onCancel}
           style={{
-            padding:      '10px 16px',
-            background:   '#1E293B',
-            border:       '1px solid #334155',
-            borderRadius: 8,
-            color:        '#94A3B8',
-            fontSize:     13,
-            cursor:       'pointer',
+            padding: '10px 16px', background: '#1E293B',
+            border: '1px solid #334155', borderRadius: 8,
+            color: '#94A3B8', fontSize: 13, cursor: 'pointer',
           }}
         >
           Cancel

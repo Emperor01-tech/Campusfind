@@ -139,7 +139,7 @@ export default function AdminDashboard() {
     return matchesSearch && matchesFilter
   })
 
-  const FILTERS = ['all', 'admin', 'faculty', 'facility', 'amenity']
+ const FILTERS = ['all', ...new Set(locations.map(l => l.category).filter(Boolean))]
 
   const categoryColors = {
     admin:    '#F59E0B',
