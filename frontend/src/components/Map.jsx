@@ -93,11 +93,11 @@ export default function Map({ selectedLocation, userLocation, meetUsers = [] }) 
         {/* ── LAYER TOGGLE: Street vs Satellite ── */}
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="🗺️ Street Map">
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-          </LayersControl.BaseLayer>
+  <TileLayer
+    attribution='&copy; OpenStreetMap &copy; CARTO'
+    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+  />
+</LayersControl.BaseLayer>
 
           <LayersControl.BaseLayer name="🛰️ Satellite">
             <TileLayer
